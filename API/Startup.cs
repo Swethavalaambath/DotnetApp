@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Data;
+using API.Interfaces;
+using API.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -22,27 +24,25 @@ namespace API
         public Startup(IConfiguration config)
         {
             _config = config;
-            
         }
-
-       
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {    
-            services.AddDbContext<DataContext>(options=>
-            {options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
+        {
+            services.AddDbContext<DataContext>(options =>
+            {
+                options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
             });
             services.AddControllers();
-            services.AddCors();
+            services.AddTransient<ITokenService, TokenService>();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIv5", Version = "v1" });
             });
-    
-    }
+        }
 
-        public  void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -55,11 +55,14 @@ namespace API
 
             app.UseRouting();
 
+            app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
+
             app.UseAuthorization();
-            app.UseCors(builder=>builder.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
         }
-    }}
+    }
+}
